@@ -9,6 +9,7 @@ import { EvaluationsModule } from './evaluations/evaluations.module';
 import { QuestionsModule } from './questions/questions.module';
 import { AnswersModule } from './answers/answers.module';
 import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-summaries.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports:[
@@ -48,6 +49,8 @@ import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-sum
     AnswersModule,
     
     EvaluationSummariesModule,
+    
+    AuthModule,
   ],
 })
 export class AppModule {}
