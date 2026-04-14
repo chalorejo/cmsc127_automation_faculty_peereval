@@ -1,6 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
+import { EvaluationCyclesModule } from './evaluation-cycles/evaluation-cycles.module';
+import { MagicLinksModule } from './magic-links/magic-links.module';
+import { NominationsModule } from './nominations/nominations.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
+import { QuestionsModule } from './questions/questions.module';
+import { AnswersModule } from './answers/answers.module';
+import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-summaries.module';
 
 @Module({
   imports:[
@@ -24,6 +32,22 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         },
       }),
     }),
+    
+    UsersModule,
+    
+    EvaluationCyclesModule,
+    
+    MagicLinksModule,
+    
+    NominationsModule,
+    
+    EvaluationsModule,
+    
+    QuestionsModule,
+    
+    AnswersModule,
+    
+    EvaluationSummariesModule,
   ],
 })
 export class AppModule {}
