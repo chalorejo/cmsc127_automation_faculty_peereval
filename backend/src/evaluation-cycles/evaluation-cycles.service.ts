@@ -18,6 +18,16 @@ export class EvaluationCyclesService {
       throw new ConflictException(`Evaluation cycle for year ${createDto.year} already exists.`);
     }
 
+    const willBeActive = createDto.is_active ?? true;
+    if (willBeActive) {
+      const activeCycle = await this.cycleRepo.findOne({ where: { is_active: true } });
+      if (activeCycle) {
+        throw new ConflictException(
+          `Cannot create a new active cycle while cycle #${activeCycle.cycle_id} is still active. Close the current cycle first.`,
+        );
+      }
+    }
+
     const cycle = this.cycleRepo.create(createDto);
     return this.cycleRepo.save(cycle);
   }

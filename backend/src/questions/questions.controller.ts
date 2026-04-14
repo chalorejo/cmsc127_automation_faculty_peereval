@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -26,8 +26,8 @@ export class QuestionsController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDto: UpdateQuestionDto) {
-    return this.questionsService.update(+id, updateDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateQuestionDto) {
+    return this.questionsService.update(id, updateDto);
   }
 
   @UseGuards(JwtAuthGuard)

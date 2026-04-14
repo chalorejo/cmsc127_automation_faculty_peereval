@@ -4,7 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Answer } from './entities/answer.entity';
 import { SubmitEvaluationDto } from './dto/submit-evaluation.dto';
 import { Evaluation, EvaluationStatus } from '../evaluations/entities/evaluation.entity';
-import { MagicLink } from '../magic-links/entities/magic-link.entity';
+import { MagicLink, MagicLinkPurpose } from '../magic-links/entities/magic-link.entity';
 
 @Injectable()
 export class AnswersService {
@@ -13,7 +13,7 @@ export class AnswersService {
     private dataSource: DataSource,
   ) {}
 
-  async submitAnswers(evaluatorId: number, dto: SubmitEvaluationDto) {
+  async submitAnswers(evaluatorId: number, dto: SubmitEvaluationDto, tokenId?: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -49,9 +49,22 @@ export class AnswersService {
       evaluation.completed_at = new Date();
       await queryRunner.manager.save(evaluation);
 
-      // 4. Invalidate Magic Link
-      if (dto.magic_token_id) {
-        await queryRunner.manager.update(MagicLink, dto.magic_token_id, { is_used: true });
+      // 4. Invalidate evaluation magic link from JWT payload (if present)
+      if (tokenId) {
+        const token = await queryRunner.manager.findOne(MagicLink, {
+          where: {
+            token_id: tokenId,
+            user_id: evaluatorId,
+            purpose: MagicLinkPurpose.EVALUATION,
+            is_used: false,
+          },
+        });
+
+        if (!token || token.expires_at <= new Date()) {
+          throw new BadRequestException('Invalid, expired, or already used evaluation magic link.');
+        }
+
+        await queryRunner.manager.update(MagicLink, tokenId, { is_used: true });
       }
 
       await queryRunner.commitTransaction();

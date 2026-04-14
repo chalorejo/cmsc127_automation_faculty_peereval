@@ -24,7 +24,15 @@ export class MagicLinksController {
     // 2. Fetch the user associated with this link
     const user = await this.usersService.findOneById(magicLink.user_id);
     
-    // 3. Generate the JWT, passing BOTH the user AND the token_id
-    return this.authService.login(user, magicLink.token_id);
+    // 3. Generate the JWT and return context needed by the frontend workflow
+    const auth = await this.authService.login(user, magicLink.token_id);
+
+    return {
+      ...auth,
+      purpose: magicLink.purpose,
+      user_id: magicLink.user_id,
+      token_id: magicLink.token_id,
+      reference_id: magicLink.reference_id,
+    };
   }
 }

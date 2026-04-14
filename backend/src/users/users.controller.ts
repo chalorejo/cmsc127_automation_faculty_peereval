@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -26,11 +26,11 @@ export class UsersController {
 
   @Roles(UserRole.ADMIN)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateUserDto) {
+    return this.usersService.update(id, updateDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.FACULTY, UserRole.DEP_CHAIR, UserRole.DEAN, UserRole.ADMIN)
   @Get('faculty')
   getFaculty() {
     return this.usersService.findAllFaculty();

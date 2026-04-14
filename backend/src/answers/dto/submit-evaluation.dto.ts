@@ -18,10 +18,6 @@ export class SubmitEvaluationDto {
   @IsInt()
   evaluation_id: number;
 
-  @IsOptional()
-  @IsInt()
-  magic_token_id?: number;
-
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AnswerDto)
