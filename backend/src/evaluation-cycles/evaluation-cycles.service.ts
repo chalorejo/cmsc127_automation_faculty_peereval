@@ -1,26 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { EvaluationCycle } from './entities/evaluation-cycle.entity';
 import { CreateEvaluationCycleDto } from './dto/create-evaluation-cycle.dto';
-import { UpdateEvaluationCycleDto } from './dto/update-evaluation-cycle.dto';
 
 @Injectable()
 export class EvaluationCyclesService {
-  create(createEvaluationCycleDto: CreateEvaluationCycleDto) {
-    return 'This action adds a new evaluationCycle';
+  constructor(
+    @InjectRepository(EvaluationCycle)
+    private readonly cycleRepo: Repository<EvaluationCycle>,
+  ) {}
+
+  async create(createDto: CreateEvaluationCycleDto) {
+    // Check if the year already exists to prevent duplicates
+    const existing = await this.cycleRepo.findOne({ where: { year: createDto.year } });
+    if (existing) {
+      throw new ConflictException(`Evaluation cycle for year ${createDto.year} already exists.`);
+    }
+
+    const cycle = this.cycleRepo.create(createDto);
+    return this.cycleRepo.save(cycle);
   }
 
-  findAll() {
-    return `This action returns all evaluationCycles`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} evaluationCycle`;
-  }
-
-  update(id: number, updateEvaluationCycleDto: UpdateEvaluationCycleDto) {
-    return `This action updates a #${id} evaluationCycle`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} evaluationCycle`;
+  async findAll() {
+    return this.cycleRepo.find({ order: { year: 'DESC' } });
   }
 }

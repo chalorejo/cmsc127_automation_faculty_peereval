@@ -5,7 +5,6 @@ export class EvaluationCycle {
   @PrimaryGeneratedColumn()
   cycle_id: number;
 
-  // Pwede true if once a year lang ang eval cycle
   @Column({ type: 'int', unique: true })
   year: number;
 
