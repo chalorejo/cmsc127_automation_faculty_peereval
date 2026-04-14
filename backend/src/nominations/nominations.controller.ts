@@ -14,7 +14,11 @@ export class NominationsController {
   @Roles(UserRole.FACULTY)
   @Post('submit')
   submit(@Request() req, @Body() dto: SubmitNominationsDto) {
-    // req.user.user_id guarantees they are submitting FOR THEMSELVES
-    return this.nominationsService.submitNominations(req.user.user_id, dto);
+    // Pass req.user.token_id directly into the service!
+    return this.nominationsService.submitNominations(
+      req.user.user_id, 
+      dto, 
+      req.user.token_id
+    );
   }
 }

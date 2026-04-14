@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -21,9 +21,16 @@ export class AuthService {
     return null;
   }
 
-  // Generic login function to generate a JWT for any valid user
-  async login(user: User) {
-    const payload = { email: user.email, sub: user.user_id, role: user.role };
+  // Generic login function to generate a JWT for any valid user.
+  // tokenId is optional and used for magic-link faculty flows.
+  async login(user: User, tokenId?: number) {
+    const payload = {
+      email: user.email,
+      sub: user.user_id,
+      role: user.role,
+      ...(tokenId ? { token_id: tokenId } : {}),
+    };
+
     return {
       access_token: this.jwtService.sign(payload),
     };

@@ -56,11 +56,24 @@ export class UsersService {
     });
   }
 
+  async findOneById(id: number): Promise<User> {
+    const user = await this.userRepo.findOne({
+      where: { user_id: id },
+      select: ['user_id', 'email', 'role', 'full_name'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+
+    return user;
+  }
+
   async findAllFaculty() {
-  return this.userRepo.find({
-    where: { role: UserRole.FACULTY },
-    select: ['user_id', 'full_name', 'email'], // Only send safe data
-  });
+    return this.userRepo.find({
+      where: { role: UserRole.FACULTY },
+      select: ['user_id', 'full_name', 'email'], // Only send safe data
+    });
   }
 
 }

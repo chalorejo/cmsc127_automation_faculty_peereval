@@ -13,7 +13,7 @@ export class NominationsService {
     private dataSource: DataSource, // Used for Transactions
   ) {}
 
-  async submitNominations(evaluateeId: number, dto: SubmitNominationsDto) {
+  async submitNominations(evaluateeId: number, dto: SubmitNominationsDto, tokenId?: number) {
     if (dto.evaluator_ids.includes(evaluateeId)) {
       throw new BadRequestException("You cannot nominate yourself.");
     }
@@ -43,6 +43,10 @@ export class NominationsService {
       // Mark magic link as used (if provided)
       if (dto.magic_token_id) {
         await queryRunner.manager.update(MagicLink, dto.magic_token_id, { is_used: true });
+      }
+
+      if (tokenId) {
+        await queryRunner.manager.update(MagicLink, tokenId, { is_used: true });
       }
 
       await queryRunner.commitTransaction();
