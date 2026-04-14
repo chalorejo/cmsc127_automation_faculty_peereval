@@ -28,4 +28,8 @@ export class QuestionsService {
     if (!question) throw new NotFoundException(`Question #${id} not found`);
     return this.questionRepo.save(question);
   }
+
+  async findActive() {
+  return this.questionRepo.find({ where: { is_active: true } });
+  }
 }

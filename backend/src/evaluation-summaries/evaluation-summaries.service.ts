@@ -1,26 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { CreateEvaluationSummaryDto } from './dto/create-evaluation-summary.dto';
-import { UpdateEvaluationSummaryDto } from './dto/update-evaluation-summary.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Not } from 'typeorm';
+import { EvaluationSummary } from './entities/evaluation-summary.entity';
 
 @Injectable()
 export class EvaluationSummariesService {
-  create(createEvaluationSummaryDto: CreateEvaluationSummaryDto) {
-    return 'This action adds a new evaluationSummary';
-  }
+  constructor(
+    @InjectRepository(EvaluationSummary) private summaryRepo: Repository<EvaluationSummary>,
+  ) {}
 
-  findAll() {
-    return `This action returns all evaluationSummaries`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} evaluationSummary`;
-  }
-
-  update(id: number, updateEvaluationSummaryDto: UpdateEvaluationSummaryDto) {
-    return `This action updates a #${id} evaluationSummary`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} evaluationSummary`;
+  async findMySummaries(evaluateeId: number) {
+    return this.summaryRepo.find({
+      where: { 
+        evaluatee_id: evaluateeId,
+        chair_sign_id: Not(IsNull()), // Must be signed by chair
+        dean_sign_id: Not(IsNull()),  // Must be signed by dean
+      },
+      relations: ['cycle'], // Join the cycle to show the year
+      order: { cycle: { year: 'DESC' } },
+    });
   }
 }

@@ -29,4 +29,10 @@ export class UsersController {
   update(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
     return this.usersService.update(+id, updateDto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('faculty')
+  getFaculty() {
+    return this.usersService.findAllFaculty();
+  }
 }

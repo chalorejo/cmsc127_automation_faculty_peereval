@@ -55,4 +55,12 @@ export class UsersService {
       select: ['user_id', 'email', 'password_hash', 'role', 'full_name'], // Explicitly select password_hash
     });
   }
+
+  async findAllFaculty() {
+  return this.userRepo.find({
+    where: { role: UserRole.FACULTY },
+    select: ['user_id', 'full_name', 'email'], // Only send safe data
+  });
+  }
+
 }

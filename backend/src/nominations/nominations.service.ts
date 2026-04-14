@@ -1,26 +1,57 @@
-import { Injectable } from '@nestjs/common';
-import { CreateNominationDto } from './dto/create-nomination.dto';
-import { UpdateNominationDto } from './dto/update-nomination.dto';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
+import { Nomination } from './entities/nomination.entity';
+import { SubmitNominationsDto } from './dto/submit-nominations.dto';
+import { EvaluationCycle } from '../evaluation-cycles/entities/evaluation-cycle.entity';
+import { MagicLink } from '../magic-links/entities/magic-link.entity';
 
 @Injectable()
 export class NominationsService {
-  create(createNominationDto: CreateNominationDto) {
-    return 'This action adds a new nomination';
-  }
+  constructor(
+    @InjectRepository(Nomination) private nomRepo: Repository<Nomination>,
+    private dataSource: DataSource, // Used for Transactions
+  ) {}
 
-  findAll() {
-    return `This action returns all nominations`;
-  }
+  async submitNominations(evaluateeId: number, dto: SubmitNominationsDto) {
+    if (dto.evaluator_ids.includes(evaluateeId)) {
+      throw new BadRequestException("You cannot nominate yourself.");
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} nomination`;
-  }
+    // 1. Find the active cycle
+    const cycle = await this.dataSource.getRepository(EvaluationCycle).findOne({ where: { is_active: true } });
+    if (!cycle) throw new BadRequestException("No active evaluation cycle found.");
 
-  update(id: number, updateNominationDto: UpdateNominationDto) {
-    return `This action updates a #${id} nomination`;
-  }
+    // 2. Use a Transaction to ensure all 5 save, or none save
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-  remove(id: number) {
-    return `This action removes a #${id} nomination`;
+    try {
+      // Create the Nomination entities
+      const nominations = dto.evaluator_ids.map(evaluator_id => {
+        return this.nomRepo.create({
+          evaluatee_id: evaluateeId,
+          evaluator_id: evaluator_id,
+          cycle_id: cycle.cycle_id,
+          status: 'PENDING' as any, // Using the enum value
+        });
+      });
+
+      await queryRunner.manager.save(nominations);
+
+      // Mark magic link as used (if provided)
+      if (dto.magic_token_id) {
+        await queryRunner.manager.update(MagicLink, dto.magic_token_id, { is_used: true });
+      }
+
+      await queryRunner.commitTransaction();
+      return { message: 'Nominations submitted successfully' };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

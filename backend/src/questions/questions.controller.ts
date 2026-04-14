@@ -29,4 +29,10 @@ export class QuestionsController {
   update(@Param('id') id: string, @Body() updateDto: UpdateQuestionDto) {
     return this.questionsService.update(+id, updateDto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('active')
+  findActive() {
+    return this.questionsService.findActive();
+  }
 }
