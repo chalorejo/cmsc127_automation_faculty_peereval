@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   dotenv.config();
@@ -14,6 +15,8 @@ async function bootstrap() {
     allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
 
   app.setGlobalPrefix('api');
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;

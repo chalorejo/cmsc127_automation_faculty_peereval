@@ -1,34 +1,40 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, Patch, ParseArrayPipe } from '@nestjs/common';
 import { NominationsService } from './nominations.service';
-import { CreateNominationDto } from './dto/create-nomination.dto';
-import { UpdateNominationDto } from './dto/update-nomination.dto';
+import { SubmitNominationsDto } from './dto/submit-nominations.dto';
+import { ReviewNominationItemDto } from './dto/review-nominations.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('nominations')
 export class NominationsController {
   constructor(private readonly nominationsService: NominationsService) {}
 
-  @Post()
-  create(@Body() createNominationDto: CreateNominationDto) {
-    return this.nominationsService.create(createNominationDto);
+  @Roles(UserRole.DEP_CHAIR)
+  @Get('pending-approval')
+  getPendingApproval() {
+    return this.nominationsService.findPendingApprovalGrouped();
   }
 
-  @Get()
-  findAll() {
-    return this.nominationsService.findAll();
+  @Roles(UserRole.DEP_CHAIR)
+  @Patch('review')
+  review(
+    @Request() req,
+    @Body(new ParseArrayPipe({ items: ReviewNominationItemDto })) decisions: ReviewNominationItemDto[],
+  ) {
+    return this.nominationsService.reviewNominations(req.user.user_id, decisions);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.nominationsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNominationDto: UpdateNominationDto) {
-    return this.nominationsService.update(+id, updateNominationDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.nominationsService.remove(+id);
+  @Roles(UserRole.FACULTY)
+  @Post('submit')
+  submit(@Request() req, @Body() dto: SubmitNominationsDto) {
+    // Pass req.user.token_id directly into the service!
+    return this.nominationsService.submitNominations(
+      req.user.user_id, 
+      dto, 
+      req.user.token_id
+    );
   }
 }
