@@ -4,9 +4,11 @@ import FacultyTable from './FacultyTable';
 
 const DeanDashboard = () => {
   return (
-    <div className="flex min-h-screen bg-white font-sans text-gray-900 antialiased">
+    <div className="flex min-h-screen bg-brand-bg">
       <Sidebar />
-      <FacultyTable />
+      <main className="flex-1 overflow-y-auto">
+        <FacultyTable />
+      </main>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Button } from './ui/button';
+import facultyIcon from '../assets/faculty-icon.svg';
 
 const FacultyTable = () => {
   const facultyData = [
@@ -23,51 +24,51 @@ const FacultyTable = () => {
   const deselectAll = () => setSelectedIds([]);
 
   return (
-    <div className="flex-1 flex flex-col p-8 bg-[#F9FAFB]">
+    <div className="flex-1 flex flex-col p-12 bg-brand-bg min-h-screen">
       <header className="mb-12">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">Hello Dean!</h1>
-        <p className="text-gray-500 text-lg">Select all faculty who are qualified for this years' peer evaluation:</p>
+        <h1 className="text-6xl font-normal text-brand-green mb-2 font-heading">Hello Dean!</h1>
+        <p className="text-brand-black text-lg">Select all faculty who are qualified for this years' peer evaluation:</p>
       </header>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="flex items-center justify-end px-6 py-4 border-b border-gray-50 gap-6">
-          <button onClick={selectAll} className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors">Select All</button>
-          <button onClick={deselectAll} className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors">Deselect All</button>
+      <div className="flex flex-col">
+        <div className="flex items-center justify-end mb-4 gap-6">
+          <button onClick={selectAll} className="text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Select All</button>
+          <button onClick={deselectAll} className="text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Deselect All</button>
         </div>
 
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-gray-50">
-              <th className="px-8 py-5 text-sm font-semibold text-gray-900">Faculty Members</th>
-              <th className="px-8 py-5 text-sm font-semibold text-gray-900">Last Evaluation</th>
-              <th className="px-8 py-5 text-sm font-semibold text-gray-900 text-right">Action</th>
+            <tr className="border-b border-gray-100">
+              <th className="px-4 py-5 text-sm font-semibold text-brand-black">Faculty Members</th>
+              <th className="px-4 py-5 text-sm font-semibold text-brand-black">Last Evaluation</th>
+              <th className="px-4 py-5 text-sm font-semibold text-brand-black text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {facultyData.map((faculty) => (
-              <tr key={faculty.id} className="hover:bg-gray-50/50 transition-colors group">
-                <td className="px-8 py-4">
+              <tr key={faculty.id} className="hover:bg-gray-50/30 transition-colors group">
+                <td className="px-4 py-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                       <div className="w-full h-full bg-gray-200" />
+                    <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
+                       <img src={facultyIcon} alt={faculty.name} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{faculty.name}</p>
-                      <p className="text-xs text-gray-500 font-medium italic">{faculty.title}</p>
-                      <p className="text-xs text-gray-400 font-medium">{faculty.email}</p>
+                      <p className="font-bold text-brand-black">{faculty.name}</p>
+                      <p className="text-xs text-brand-grey font-medium">{faculty.title}</p>
+                      <p className="text-xs text-brand-grey italic">{faculty.email}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-8 py-4">
-                  <span className="text-sm text-gray-500 font-medium">{faculty.lastEval}</span>
+                <td className="px-4 py-6">
+                  <span className="text-sm text-brand-black font-medium">{faculty.lastEval}</span>
                 </td>
-                <td className="px-8 py-4 text-right">
+                <td className="px-4 py-6 text-right">
                   <button 
                     onClick={() => toggleSelect(faculty.id)}
-                    className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                    className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all duration-200 ml-auto ${
                       selectedIds.includes(faculty.id)
-                        ? 'bg-emerald-900 border-emerald-900 shadow-sm'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        ? 'bg-brand-green border-brand-green'
+                        : 'border-gray-300 bg-white hover:border-gray-400'
                     }`}
                   >
                     {selectedIds.includes(faculty.id) && <Check className="w-4 h-4 text-white stroke-[3]" />}
@@ -79,9 +80,9 @@ const FacultyTable = () => {
         </table>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-12 flex justify-end">
         <Button 
-          className="bg-maroon hover:bg-[#600D0F] text-white px-10 py-6 rounded-2xl text-lg font-bold shadow-lg shadow-maroon/20 active:scale-95 transition-all"
+          className="bg-brand-maroon hover:opacity-90 text-white px-12 py-7 rounded-xl text-xl font-medium transition-all"
         >
           Start Forms
         </Button>
