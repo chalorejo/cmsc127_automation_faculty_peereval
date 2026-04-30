@@ -16,6 +16,17 @@
     --font-heading: 'Optima', serif;
     --font-sans: 'Inter', sans-serif;
     
+    /* Typography Scale (Major Third 1.25, Scaled Down 0.8x) */
+    --font-size-6xl: 3.05rem;
+    --font-size-5xl: 2.45rem;
+    --font-size-4xl: 1.95rem;
+    --font-size-3xl: 1.55rem;
+    --font-size-2xl: 1.25rem;
+    --font-size-xl: 1rem;
+    --font-size-base: 0.875rem;
+    --font-size-sm: 0.75rem;
+    --font-size-xs: 0.625rem;
+
     /* Brand Colors */
     --color-brand-bg: #FBFCFF;
     --color-brand-green: #00563F;

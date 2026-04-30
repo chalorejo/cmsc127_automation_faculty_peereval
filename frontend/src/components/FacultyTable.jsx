@@ -24,65 +24,72 @@ const FacultyTable = () => {
   const deselectAll = () => setSelectedIds([]);
 
   return (
-    <div className="flex-1 flex flex-col p-12 bg-brand-bg min-h-screen">
-      <header className="mb-12">
-        <h1 className="text-6xl font-normal text-brand-green mb-2 font-heading">Hello Dean!</h1>
-        <p className="text-brand-black text-lg">Select all faculty who are qualified for this years' peer evaluation:</p>
+    <div className="flex-1 flex flex-col p-6 lg:p-12 bg-brand-bg min-h-screen">
+      <header className="mb-8 lg:mb-12">
+        <h1 className="text-4xl lg:text-6xl font-normal text-brand-green mb-2 font-heading">Hello Dean!</h1>
+        <p className="text-brand-black text-base lg:text-lg">Select all faculty who are qualified for this years' peer evaluation:</p>
       </header>
 
       <div className="flex flex-col">
-        <div className="flex items-center justify-end mb-4 gap-6">
-          <button onClick={selectAll} className="text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Select All</button>
-          <button onClick={deselectAll} className="text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Deselect All</button>
+        <div className="flex items-center justify-end mb-4 gap-4 lg:gap-6">
+          <button onClick={selectAll} className="text-xs lg:text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Select All</button>
+          <button onClick={deselectAll} className="text-xs lg:text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Deselect All</button>
         </div>
 
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="px-4 py-5 text-sm font-semibold text-brand-black">Faculty Members</th>
-              <th className="px-4 py-5 text-sm font-semibold text-brand-black">Last Evaluation</th>
-              <th className="px-4 py-5 text-sm font-semibold text-brand-black text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {facultyData.map((faculty) => (
-              <tr key={faculty.id} className="hover:bg-gray-50/30 transition-colors group">
-                <td className="px-4 py-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
-                       <img src={facultyIcon} alt={faculty.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-brand-black">{faculty.name}</p>
-                      <p className="text-xs text-brand-grey font-medium">{faculty.title}</p>
-                      <p className="text-xs text-brand-grey italic">{faculty.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-6">
-                  <span className="text-sm text-brand-black font-medium">{faculty.lastEval}</span>
-                </td>
-                <td className="px-4 py-6 text-right">
-                  <button 
-                    onClick={() => toggleSelect(faculty.id)}
-                    className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all duration-200 ml-auto ${
-                      selectedIds.includes(faculty.id)
-                        ? 'bg-brand-green border-brand-green'
-                        : 'border-gray-300 bg-white hover:border-gray-400'
-                    }`}
-                  >
-                    {selectedIds.includes(faculty.id) && <Check className="w-4 h-4 text-white stroke-[3]" />}
-                  </button>
-                </td>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-6 py-5 text-sm font-semibold text-brand-black">Faculty Members</th>
+                <th className="hidden lg:table-cell px-6 py-5 text-sm font-semibold text-brand-black">Last Evaluation</th>
+                <th className="px-6 py-5 text-sm font-semibold text-brand-black text-right">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {facultyData.map((faculty) => (
+                <tr key={faculty.id} className="hover:bg-gray-50/30 transition-colors group">
+                  <td className="px-6 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
+                         <img src={facultyIcon} alt={faculty.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-brand-black truncate text-sm lg:text-base">{faculty.name}</p>
+                        <p className="text-xs text-brand-grey font-medium truncate">{faculty.title}</p>
+                        <p className="text-xs text-brand-grey italic truncate">{faculty.email}</p>
+                        {/* Mobile Evaluation Date */}
+                        <p className="lg:hidden text-[10px] text-brand-grey font-semibold mt-1">
+                          Last Evaluation: {faculty.lastEval}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  {/* Desktop Evaluation Date */}
+                  <td className="hidden lg:table-cell px-6 py-6">
+                    <span className="text-sm text-brand-black font-medium">{faculty.lastEval}</span>
+                  </td>
+                  <td className="px-6 py-6 text-right">
+                    <button 
+                      onClick={() => toggleSelect(faculty.id)}
+                      className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all duration-200 ml-auto ${
+                        selectedIds.includes(faculty.id)
+                          ? 'bg-brand-green border-brand-green'
+                          : 'border-gray-300 bg-white hover:border-gray-400'
+                      }`}
+                    >
+                      {selectedIds.includes(faculty.id) && <Check className="w-4 h-4 text-white stroke-[3]" />}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="mt-12 flex justify-end">
+      <div className="mt-8 lg:mt-12 flex justify-end">
         <Button 
-          className="bg-brand-maroon hover:opacity-90 text-white px-12 py-7 rounded-xl text-xl font-medium transition-all"
+          className="w-full lg:w-auto bg-brand-maroon hover:opacity-90 text-white px-12 py-7 rounded-xl text-xl font-medium transition-all"
         >
           Start Forms
         </Button>
