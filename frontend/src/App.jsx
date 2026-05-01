@@ -1,11 +1,9 @@
 import React from 'react';
-import DeanDashboard from './components/DeanDashboard';
+import AppRoutes from './routes/Routes';
 
 function App() {
   return (
-    <div className="App">
-      <DeanDashboard />
-    </div>
+      <AppRoutes/>
   );
 }
 
