@@ -1,11 +1,14 @@
 import React from 'react';
 import DeanDashboard from './components/DeanDashboard';
+import { ToastProvider } from './lib/ToastContext';
 
 function App() {
   return (
-    <div className="App">
-      <DeanDashboard />
-    </div>
+    <ToastProvider>
+      <div className="App">
+        <DeanDashboard />
+      </div>
+    </ToastProvider>
   );
 }
 
