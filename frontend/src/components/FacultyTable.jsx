@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Check } from 'lucide-react';
 import { Button } from './ui/button';
 import facultyIcon from '../assets/faculty-icon.svg';
+import ConfirmationPopup from './ConfirmationPopup';
+import { useToast } from '../lib/ToastContext';
 
 const FacultyTable = () => {
   const facultyData = [
@@ -13,6 +15,8 @@ const FacultyTable = () => {
   ];
 
   const [selectedIds, setSelectedIds] = useState(facultyData.filter(f => f.checked).map(f => f.id));
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const { showToast } = useToast();
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => 
@@ -22,6 +26,30 @@ const FacultyTable = () => {
 
   const selectAll = () => setSelectedIds(facultyData.map(f => f.id));
   const deselectAll = () => setSelectedIds([]);
+
+  const handleStartForms = () => {
+    if (selectedIds.length === 0) {
+      showToast({
+        type: 'warning',
+        title: 'No Faculty Selected',
+        message: 'Please select at least one faculty member to proceed.',
+        actionText: 'Got it'
+      });
+      return;
+    }
+    setIsPopupOpen(true);
+  };
+
+  const handleConfirm = () => {
+    setIsPopupOpen(false);
+    // Simulate transaction
+    showToast({
+      type: 'success',
+      title: 'Success',
+      message: `Form generation started for ${selectedIds.length} faculty members.`,
+      actionText: 'View'
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col p-6 lg:p-12 bg-brand-bg min-h-screen">
@@ -89,11 +117,18 @@ const FacultyTable = () => {
 
       <div className="mt-8 lg:mt-12 flex justify-end">
         <Button 
-          className="w-full lg:w-auto bg-brand-maroon hover:opacity-90 text-white px-12 py-7 rounded-xl text-xl font-medium transition-all"
+          onClick={handleStartForms}
+          className="w-full lg:w-auto bg-brand-maroon hover:opacity-90 text-white px-12 py-3 h-auto rounded-[16px] text-lg font-medium transition-all shadow-[0_8px_20px_-4px_rgba(123,17,19,0.3)]"
         >
           Start Forms
         </Button>
       </div>
+
+      <ConfirmationPopup 
+        isOpen={isPopupOpen} 
+        onClose={() => setIsPopupOpen(false)} 
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 };
