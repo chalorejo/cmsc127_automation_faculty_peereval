@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Check } from 'lucide-react';
-import { Button } from './ui/button';
-import facultyIcon from '../assets/faculty-icon.svg';
-import ConfirmationPopup from './ConfirmationPopup';
-import { useToast } from '../lib/ToastContext';
+import { Button } from '../ui/button';
+import facultyIcon from '../../assets/faculty-icon.svg';
+import ConfirmationPopup from '../ui/ConfirmationPopup';
+import { useToast } from '../../lib/ToastContext';
 
-const FacultyTable = () => {
+const FacultyTable = ({ onComplete }) => {
   const facultyData = [
     { id: 1, name: 'John Doe', title: 'Assistant Professor', email: 'example@email.com', lastEval: '4/21/2026', checked: true },
     { id: 2, name: 'John Doe', title: 'Assistant Professor', email: 'example@email.com', lastEval: '4/21/2026', checked: true },
@@ -49,6 +49,11 @@ const FacultyTable = () => {
       message: `Form generation started for ${selectedIds.length} faculty members.`,
       actionText: 'View'
     });
+    
+    // Proceed to next step after a short delay
+    setTimeout(() => {
+      onComplete?.();
+    }, 1500);
   };
 
   return (
@@ -128,6 +133,10 @@ const FacultyTable = () => {
         isOpen={isPopupOpen} 
         onClose={() => setIsPopupOpen(false)} 
         onConfirm={handleConfirm}
+        title="Proceed to Forms?"
+        description="Make sure to double check that all desired faculty is selected."
+        confirmLabel="Review"
+        cancelLabel="Cancel"
       />
     </div>
   );
