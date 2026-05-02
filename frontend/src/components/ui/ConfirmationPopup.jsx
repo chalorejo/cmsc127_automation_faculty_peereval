@@ -1,9 +1,23 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from './button';
 
-const ConfirmationPopup = ({ isOpen, onClose, onConfirm }) => {
+const ConfirmationPopup = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  title = "Are you sure?", 
+  description = "Please confirm your action.",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  variant = "maroon" // can be "maroon", "green", etc.
+}) => {
   if (!isOpen) return null;
+
+  const confirmButtonStyles = {
+    maroon: "bg-brand-maroon shadow-[0_8px_20px_-4px_rgba(123,17,19,0.2)]",
+    green: "bg-brand-green shadow-[0_8px_20px_-4px_rgba(0,86,63,0.2)]",
+  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -24,11 +38,11 @@ const ConfirmationPopup = ({ isOpen, onClose, onConfirm }) => {
         </button>
 
         <h2 className="text-3xl lg:text-4xl font-normal text-brand-green mb-4 font-heading">
-          Proceed to Forms?
+          {title}
         </h2>
         
         <p className="text-brand-grey text-sm lg:text-base mb-10 max-w-[300px]">
-          Make sure to double check that all desired faculty is selected.
+          {description}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
@@ -36,13 +50,13 @@ const ConfirmationPopup = ({ isOpen, onClose, onConfirm }) => {
             onClick={onClose}
             className="flex-1 py-3 px-8 rounded-[16px] border border-gray-200 text-brand-grey font-medium hover:bg-gray-50 transition-all text-base shadow-sm"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-3 px-8 rounded-[16px] bg-brand-maroon text-white font-medium hover:opacity-90 transition-all text-base shadow-[0_8px_20px_-4px_rgba(123,17,19,0.2)]"
+            className={`flex-1 py-3 px-8 rounded-[16px] text-white font-medium hover:opacity-90 transition-all text-base ${confirmButtonStyles[variant] || confirmButtonStyles.maroon}`}
           >
-            Review
+            {confirmLabel}
           </button>
         </div>
       </div>

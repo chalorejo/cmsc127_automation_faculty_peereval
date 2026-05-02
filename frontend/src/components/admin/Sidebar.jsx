@@ -1,14 +1,14 @@
 import React from 'react';
 import { Home, Bell, FileText, LayoutDashboard, Settings, ChevronDown, X } from 'lucide-react';
-import logo from '../assets/website logo.svg';
-import facultyIcon from '../assets/faculty-icon.svg';
+import logo from '../../assets/website logo.svg';
+import facultyIcon from '../../assets/faculty-icon.svg';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, currentView, onNavigate }) => {
   const navItems = [
-    { icon: Home, label: 'Home', active: true },
+    { icon: Home, label: 'Home', view: 'select-faculty' },
     { icon: Bell, label: 'Notifications' },
-    { icon: FileText, label: 'Forms' },
-    { icon: LayoutDashboard, label: 'Dashboard' },
+    { icon: FileText, label: 'Forms', view: 'select-evaluators' },
+    { icon: LayoutDashboard, label: 'Dashboard', view: 'progress' },
     { icon: Settings, label: 'Settings' },
   ];
 
@@ -45,19 +45,28 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-2 space-y-1">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                item.active 
-                  ? 'bg-[#E5E7EB] text-brand-black font-semibold' 
-                  : 'text-brand-grey hover:bg-gray-50 hover:text-brand-black'
-              }`}
-            >
-              <item.icon className={`w-5 h-5 ${item.active ? 'text-brand-black' : 'text-brand-grey'}`} />
-              <span className="text-sm">{item.label}</span>
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = item.view === currentView;
+            return (
+              <button
+                key={item.label}
+                onClick={() => {
+                  if (item.view) {
+                    onNavigate(item.view);
+                    onClose();
+                  }
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-[#E5E7EB] text-brand-black font-semibold' 
+                    : 'text-brand-grey hover:bg-gray-50 hover:text-brand-black'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-brand-black' : 'text-brand-grey'}`} />
+                <span className="text-sm">{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
 
         {/* User Profile */}

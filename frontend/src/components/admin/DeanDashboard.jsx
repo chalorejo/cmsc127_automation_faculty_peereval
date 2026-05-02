@@ -1,15 +1,36 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import FacultyTable from './FacultyTable';
+import EvaluatorSelection from './EvaluatorSelection';
+import ProgressDashboard from './ProgressDashboard';
 import { Menu } from 'lucide-react';
-import logo from '../assets/website logo.svg';
+import logo from '../../assets/website logo.svg';
 
 const DeanDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentView, setCurrentView] = useState('select-faculty');
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'select-faculty':
+        return <FacultyTable onComplete={() => setCurrentView('select-evaluators')} />;
+      case 'select-evaluators':
+        return <EvaluatorSelection onConfirm={() => setCurrentView('progress')} />;
+      case 'progress':
+        return <ProgressDashboard />;
+      default:
+        return <FacultyTable />;
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-brand-bg relative">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        currentView={currentView}
+        onNavigate={(view) => setCurrentView(view)}
+      />
       
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
@@ -25,7 +46,7 @@ const DeanDashboard = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto">
-          <FacultyTable />
+          {renderView()}
         </div>
       </main>
     </div>

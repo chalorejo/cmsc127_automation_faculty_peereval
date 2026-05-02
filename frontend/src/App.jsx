@@ -1,5 +1,5 @@
 import React from 'react';
-import DeanDashboard from './components/DeanDashboard';
+import DeanDashboard from './components/admin/DeanDashboard';
 import { ToastProvider } from './lib/ToastContext';
 
 function App() {
