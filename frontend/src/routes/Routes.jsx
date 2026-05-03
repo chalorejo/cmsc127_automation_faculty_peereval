@@ -1,15 +1,25 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route } from 'react-router-dom';
 import DeanDashboard from '../components/admin/DeanDashboard';
 import ClientForms from '../components/ClientForms';
 import AdminLogin from '../components/AdminLogin';
 
-const AppRoutes = () => {
+const AppRoutes = ({ isAuthenticated, onLoginSuccess, onLogout }) => {
   return (
     <Routes>
-      <Route path="/" element={<AdminLogin />} />
-      <Route path="/dean-dashboard" element={<DeanDashboard />} />
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dean-dashboard" replace />
+          ) : (
+            <AdminLogin onLoginSuccess={onLoginSuccess} />
+          )
+        }
+      />
+      <Route path="/dean-dashboard" element={<DeanDashboard onLogout={onLogout} />} />
       <Route path="/client-forms" element={<ClientForms />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

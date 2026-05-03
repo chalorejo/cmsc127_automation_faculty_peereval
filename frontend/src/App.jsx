@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import AppRoutes from './routes/Routes';
-import DeanDashboard from './components/admin/DeanDashboard';
-import AdminLogin from './components/AdminLogin';
 import { ToastProvider } from './lib/ToastContext';
 import { api } from './lib/api';
 
@@ -36,9 +34,13 @@ function App() {
   }
 
   return (
-      <div>
-          <AppRoutes />
-      </div>
+    <ToastProvider>
+      <AppRoutes
+        isAuthenticated={isAuthenticated}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
+      />
+    </ToastProvider>
   );
 }
 
