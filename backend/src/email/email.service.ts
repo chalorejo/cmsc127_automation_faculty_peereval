@@ -37,8 +37,13 @@ export class EmailService {
       ...options,
     };
 
-    const info = await this.transporter.sendMail(mailOptions);
-    this.logger.log(`Email sent: ${info.messageId}`);
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Email sent: ${info.messageId}`);
+    } catch (error) {
+      this.logger.error('Failed to send email', JSON.stringify(error));
+      throw error;
+    }
   }
 
   async sendReminderEmail(

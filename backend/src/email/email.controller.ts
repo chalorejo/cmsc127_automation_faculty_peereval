@@ -10,29 +10,13 @@ import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 
 @Controller('email')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.DEP_CHAIR, UserRole.DEAN)
 export class EmailController {
   constructor(
     private readonly emailService: EmailService,
     private readonly usersService: UsersService,
   ) {}
-
-  @Post('test')
-  async sendTestEmail(@Body() body: SendTestEmailDto): Promise<{ message: string }>
-  {
-    const subject = body.subject ?? 'SMTP Test Email';
-    const text =
-      body.text ??
-      `This is a test email from the CMSC127 automation backend.\n\nSent to: ${body.to}`;
-
-    await this.emailService.sendMail({
-      to: body.to,
-      subject,
-      text,
-      html: body.html,
-    });
-
-    return { message: 'Test email sent.' };
-  }
 
   @Post('reminder')
   async sendReminderEmail(@Body() body: SendReminderEmailDto): Promise<{ message: string }> {
@@ -42,18 +26,14 @@ export class EmailController {
       body.reminder,
       body.subject,
     );
-
     return { message: 'Reminder email sent.' };
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DEP_CHAIR, UserRole.DEAN)
   @Post('reminder/faculty')
   async sendFacultyReminders(
     @Body() body: SendFacultyReminderDto,
   ): Promise<{ message: string; count: number }> {
     const faculty = await this.usersService.findAllFaculty();
-
     await Promise.all(
       faculty.map((user) =>
         this.emailService.sendReminderEmail(
@@ -64,7 +44,6 @@ export class EmailController {
         ),
       ),
     );
-
     return { message: 'Faculty reminders sent.', count: faculty.length };
   }
 }
