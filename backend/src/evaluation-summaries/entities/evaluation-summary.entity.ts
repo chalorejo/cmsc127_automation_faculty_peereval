@@ -56,6 +56,6 @@ export class EvaluationSummary {
   @Column({ type: 'int', nullable: true })
   dean_sign_id: number;
 
-  @Column({ type: 'varchar', length: 512, nullable: true })
-  document_url: string;
-}
+  @Column({ type: 'bytea', nullable: true })
+  document_url: Buffer | null;
+} 

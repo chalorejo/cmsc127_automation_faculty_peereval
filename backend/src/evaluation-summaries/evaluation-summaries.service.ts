@@ -210,8 +210,18 @@ export class EvaluationSummariesService {
         chair_signed_by: summary.chairSign?.full_name ?? null,
         dean_signed_by: summary.deanSign?.full_name ?? null,
       },
-      document_url: summary.document_url,
+      document_url: summary.document_url ? summary.document_url.toString('base64') : null,
     };
+  }
+
+  async savePdfDocument(summaryId: number, pdfData: Buffer) {
+    const summary = await this.summaryRepo.findOne({ where: { summary_id: summaryId } });
+    if (!summary) {
+      throw new NotFoundException(`Evaluation summary #${summaryId} not found`);
+    }
+
+    summary.document_url = pdfData;
+    await this.summaryRepo.save(summary);
   }
 
   async getPdfStructure(summaryId: number, requesterId: number, role: UserRole) {
