@@ -132,6 +132,89 @@ export const api = {
       return response.json();
     },
   },
+  questions: {
+    listAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load questions');
+      }
+
+      return response.json();
+    },
+
+    findWithSections: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/questions/with-sections`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load questions with sections');
+      }
+
+      return response.json();
+    },
+
+    create: async (payload) => {
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to create question');
+      }
+
+      return response.json();
+    },
+
+    update: async (questionId, payload) => {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to update question');
+      }
+
+      return response.json();
+    },
+  },
+  questionSections: {
+    listAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/question-sections`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load question sections');
+      }
+
+      return response.json();
+    },
+  },
 };
 
 // Helper function to add auth token to requests

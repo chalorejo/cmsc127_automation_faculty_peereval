@@ -8,6 +8,7 @@ const Sidebar = ({ isOpen, onClose, currentView, onNavigate, onLogout }) => {
     { icon: Home, label: 'Home', view: 'select-faculty' },
     { icon: Bell, label: 'Notifications' },
     { icon: FileText, label: 'Forms', view: 'select-evaluators' },
+    { icon: FileText, label: 'Questions', view: 'questions' },
     { icon: LayoutDashboard, label: 'Dashboard', view: 'progress' },
     { icon: Settings, label: 'Settings' },
   ];
