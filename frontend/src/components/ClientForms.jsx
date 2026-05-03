@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Sidebar from './Sidebar';
+import Sidebar from './admin/Sidebar';
 import logo from '../assets/website logo.svg';
 
 const ClientForms = () => {

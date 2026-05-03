@@ -1,13 +1,9 @@
-<<<<<<< HEAD
-import React from 'react';
-import AppRoutes from './routes/Routes';
-=======
 import React, { useState, useEffect } from 'react';
+import AppRoutes from './routes/Routes';
 import DeanDashboard from './components/admin/DeanDashboard';
 import AdminLogin from './components/AdminLogin';
 import { ToastProvider } from './lib/ToastContext';
 import { api } from './lib/api';
->>>>>>> main
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,21 +36,9 @@ function App() {
   }
 
   return (
-<<<<<<< HEAD
       <div>
           <AppRoutes />
       </div>
-=======
-    <ToastProvider>
-      <div className="App">
-        {isAuthenticated ? (
-          <DeanDashboard onLogout={handleLogout} />
-        ) : (
-          <AdminLogin onLoginSuccess={handleLoginSuccess} />
-        )}
-      </div>
-    </ToastProvider>
->>>>>>> main
   );
 }
 
