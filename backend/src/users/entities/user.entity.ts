@@ -27,4 +27,7 @@ export class User {
     default: UserRole.FACULTY,
   })
   role: UserRole;
+
+  @Column({ type: 'bytea', nullable: true })
+  image: Buffer | null;
 }

@@ -6,7 +6,7 @@ import ProgressDashboard from './ProgressDashboard';
 import { Menu } from 'lucide-react';
 import logo from '../../assets/website logo.svg';
 
-const DeanDashboard = () => {
+const DeanDashboard = ({ onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentView, setCurrentView] = useState('select-faculty');
 
@@ -30,6 +30,7 @@ const DeanDashboard = () => {
         onClose={() => setIsSidebarOpen(false)} 
         currentView={currentView}
         onNavigate={(view) => setCurrentView(view)}
+        onLogout={onLogout}
       />
       
       <main className="flex-1 flex flex-col min-w-0">
