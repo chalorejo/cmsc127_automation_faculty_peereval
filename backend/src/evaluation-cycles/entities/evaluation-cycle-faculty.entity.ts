@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn, Unique, Column } from 'typeorm';
 import { EvaluationCycle } from './evaluation-cycle.entity';
 import { User } from '../../users/entities/user.entity';
 
@@ -16,6 +16,9 @@ export class EvaluationCycleFaculty {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  @Column({ type: 'int' })
   cycle_id: number;
+
+  @Column({ type: 'int' })
   user_id: number;
 }
