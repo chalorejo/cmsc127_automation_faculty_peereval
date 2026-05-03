@@ -1,11 +1,13 @@
 import React from 'react';
-import AuthGate from './components/AuthGate';
+import DeanDashboard from './components/admin/DeanDashboard';
 import { ToastProvider } from './lib/ToastContext';
 
 function App() {
   return (
     <ToastProvider>
-      <AuthGate />
+      <div className="App">
+        <DeanDashboard />
+      </div>
     </ToastProvider>
   );
 }
