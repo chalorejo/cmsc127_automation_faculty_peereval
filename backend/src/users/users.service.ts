@@ -5,20 +5,51 @@ import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { College } from '../college/entities/college.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(College) private readonly collegeRepo: Repository<College>,
   ) {}
+
+  private serializeUser(user: User) {
+    return {
+      user_id: user.user_id,
+      full_name: user.full_name,
+      email: user.email,
+      role: user.role,
+      college_id: user.college_id ?? null,
+      college_name: user.college?.name ?? null,
+      image_base64: user.image ? user.image.toString('base64') : null,
+    };
+  }
+
+  private async resolveCollege(collegeId?: number) {
+    if (collegeId == null) {
+      return null;
+    }
+
+    const college = await this.collegeRepo.findOne({
+      where: { college_id: collegeId },
+    });
+
+    if (!college) {
+      throw new NotFoundException(`College #${collegeId} not found`);
+    }
+
+    return college;
+  }
 
   async create(createDto: CreateUserDto) {
     const existing = await this.userRepo.findOne({ where: { email: createDto.email } });
     if (existing) throw new ConflictException('Email already in use.');
 
     // Extract image before passing to create
-    const { image: imageBase64, ...createData } = createDto;
+    const { image: imageBase64, college_id, ...createData } = createDto;
     const user = this.userRepo.create(createData as Partial<User>);
+    const college = await this.resolveCollege(college_id);
 
     // Business Logic: Admins, Chairs, and Deans REQUIRE a password. Faculty DO NOT.
     if (user.role !== UserRole.FACULTY) {
@@ -37,16 +68,21 @@ export class UsersService {
       }
     }
 
-    return this.userRepo.save(user);
+    if (college) {
+      user.college = college;
+      user.college_id = college.college_id;
+    }
+
+    return this.serializeUser(await this.userRepo.save(user));
   }
 
   findAll() {
-    return this.userRepo.find();
+    return this.userRepo.find({ relations: ['college'] }).then((users) => users.map((user) => this.serializeUser(user)));
   }
 
   async update(id: number, updateDto: UpdateUserDto) {
     // Extract image before passing to preload
-    const { image: imageBase64, ...updateData } = updateDto;
+    const { image: imageBase64, college_id, ...updateData } = updateDto;
     const user = await this.userRepo.preload({
       user_id: id,
       ...updateData,
@@ -67,7 +103,13 @@ export class UsersService {
       }
     }
 
-    return this.userRepo.save(user);
+    if (college_id !== undefined) {
+      const college = await this.resolveCollege(college_id);
+      user.college = college;
+      user.college_id = college?.college_id ?? null;
+    }
+
+    return this.serializeUser(await this.userRepo.save(user));
   }
 
   // Used by AuthService for login
@@ -81,7 +123,7 @@ export class UsersService {
   async findOneById(id: number): Promise<User> {
     const user = await this.userRepo.findOne({
       where: { user_id: id },
-      select: ['user_id', 'email', 'role', 'full_name'],
+      relations: ['college'],
     });
 
     if (!user) {
@@ -92,27 +134,24 @@ export class UsersService {
   }
 
   async findAllFaculty() {
-    return this.userRepo.find({
+    const users = await this.userRepo.find({
       where: { role: UserRole.FACULTY },
-      select: ['user_id', 'full_name', 'email'], // Only send safe data
+      relations: ['college'],
     });
+
+    return users.map((user) => this.serializeUser(user));
   }
 
   async getUserWithImage(id: number) {
     const user = await this.userRepo.findOne({
       where: { user_id: id },
+      relations: ['college'],
     });
 
     if (!user) {
       throw new NotFoundException(`User #${id} not found`);
     }
 
-    return {
-      user_id: user.user_id,
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role,
-      image_base64: user.image ? user.image.toString('base64') : null,
-    };
+    return this.serializeUser(user);
   }
 }
