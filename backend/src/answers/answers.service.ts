@@ -84,6 +84,24 @@ export class AnswersService {
         throw new BadRequestException('This evaluation has already been completed.');
       }
 
+      if (!tokenId) {
+        throw new BadRequestException('Evaluation magic link token is required.');
+      }
+
+      const token = await queryRunner.manager.findOne(MagicLink, {
+        where: {
+          token_id: tokenId,
+          user_id: evaluatorId,
+          purpose: MagicLinkPurpose.EVALUATION,
+          reference_id: dto.evaluation_id,
+          is_used: false,
+        },
+      });
+
+      if (!token || token.expires_at <= new Date()) {
+        throw new BadRequestException('Invalid, expired, or already used evaluation magic link.');
+      }
+
       // 2. Save Answers
       const answersToSave = dto.answers.map(ans => 
         this.answerRepo.create({
@@ -100,23 +118,8 @@ export class AnswersService {
       evaluation.completed_at = new Date();
       await queryRunner.manager.save(evaluation);
 
-      // 4. Invalidate evaluation magic link from JWT payload (if present)
-      if (tokenId) {
-        const token = await queryRunner.manager.findOne(MagicLink, {
-          where: {
-            token_id: tokenId,
-            user_id: evaluatorId,
-            purpose: MagicLinkPurpose.EVALUATION,
-            is_used: false,
-          },
-        });
-
-        if (!token || token.expires_at <= new Date()) {
-          throw new BadRequestException('Invalid, expired, or already used evaluation magic link.');
-        }
-
-        await queryRunner.manager.update(MagicLink, tokenId, { is_used: true });
-      }
+      // 4. Invalidate evaluation magic link from JWT payload
+      await queryRunner.manager.update(MagicLink, tokenId, { is_used: true });
 
       // 5. Generate the summary if this completion finished the full set of evaluations
       await this.generateSummaryIfComplete(queryRunner, evaluation.evaluation_id);
@@ -196,7 +199,7 @@ export class AnswersService {
     const totalCount = Number(completionCounts?.total_count ?? 0);
     const completedCount = Number(completionCounts?.completed_count ?? 0);
 
-    if (totalCount === 0 || completedCount !== totalCount) {
+    if (completedCount < 3) {
       return;
     }
 
