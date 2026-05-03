@@ -24,6 +24,12 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Roles(UserRole.ADMIN, UserRole.DEP_CHAIR, UserRole.DEAN, UserRole.FACULTY)
+  @Get(':id')
+  getUserWithImage(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.getUserWithImage(id);
+  }
+
   @Roles(UserRole.ADMIN)
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateUserDto) {

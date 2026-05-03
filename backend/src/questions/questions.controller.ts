@@ -35,4 +35,16 @@ export class QuestionsController {
   findActive() {
     return this.questionsService.findActive();
   }
+    
+  @Roles(UserRole.ADMIN)
+  @Get('sections/:sectionId')
+  findBySectionId(@Param('sectionId', ParseIntPipe) sectionId: number) {
+    return this.questionsService.findAllBySectionId(sectionId);
+  }
+    
+  @Roles(UserRole.ADMIN)
+  @Get('with-sections')
+  findWithSections() {
+    return this.questionsService.findAllWithSections();
+  }
 }

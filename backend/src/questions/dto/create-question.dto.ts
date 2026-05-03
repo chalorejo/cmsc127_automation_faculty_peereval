@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsEnum, IsBoolean, IsOptional, IsInt, Min } from 'class-validator';
 import { QuestionType } from '../entities/question.entity';
 
 export class CreateQuestionDto {
@@ -11,4 +11,13 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsBoolean()
   is_required?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  section_id?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  order_in_section?: number;
 }
