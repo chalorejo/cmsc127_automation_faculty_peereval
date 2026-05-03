@@ -12,6 +12,7 @@ import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-sum
 import { AuthModule } from './auth/auth.module';
 import { CollegeModule } from './college/college.module';
 import { PdfServicesModule } from './pdf-services/pdf-services.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports:[
@@ -27,12 +28,15 @@ import { PdfServicesModule } from './pdf-services/pdf-services.module';
         url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: true,
-        ssl: true,
-        extra: {
-          ssl: {
-            rejectUnauthorized: false, 
-          },
-        },
+        ssl: configService.get<string>('DATABASE_SSL', 'true') === 'true',
+        extra:
+          configService.get<string>('DATABASE_SSL', 'true') === 'true'
+            ? {
+                ssl: {
+                  rejectUnauthorized: false,
+                },
+              }
+            : undefined,
       }),
     }),
     
@@ -57,6 +61,8 @@ import { PdfServicesModule } from './pdf-services/pdf-services.module';
     CollegeModule,
     
     PdfServicesModule,
+
+    EmailModule,
   ],
 })
 export class AppModule {}
