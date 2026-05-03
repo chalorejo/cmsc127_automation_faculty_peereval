@@ -1,8 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EvaluationCycle } from './entities/evaluation-cycle.entity';
 import { CreateEvaluationCycleDto } from './dto/create-evaluation-cycle.dto';
+import { UpdateEvaluationCycleDto } from './dto/update-evaluation-cycle.dto';
 
 @Injectable()
 export class EvaluationCyclesService {
@@ -30,6 +31,24 @@ export class EvaluationCyclesService {
 
     const cycle = this.cycleRepo.create(createDto);
     return this.cycleRepo.save(cycle);
+  }
+
+  async update(cycleId: number, updateDto: UpdateEvaluationCycleDto) {
+    const cycle = await this.cycleRepo.findOne({ where: { cycle_id: cycleId } });
+
+    if (!cycle) {
+      throw new NotFoundException(`Evaluation cycle #${cycleId} not found.`);
+    }
+
+    if (updateDto.year && updateDto.year !== cycle.year) {
+      const existing = await this.cycleRepo.findOne({ where: { year: updateDto.year } });
+      if (existing && existing.cycle_id !== cycleId) {
+        throw new ConflictException(`Evaluation cycle for year ${updateDto.year} already exists.`);
+      }
+    }
+
+    const updatedCycle = this.cycleRepo.merge(cycle, updateDto);
+    return this.cycleRepo.save(updatedCycle);
   }
 
   async findAll() {

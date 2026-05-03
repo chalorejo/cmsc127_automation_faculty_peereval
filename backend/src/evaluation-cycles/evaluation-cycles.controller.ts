@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Patch, Param, ParseIntPipe } from '@nestjs/common';
 import { EvaluationCyclesService } from './evaluation-cycles.service';
 import { CreateEvaluationCycleDto } from './dto/create-evaluation-cycle.dto';
+import { UpdateEvaluationCycleDto } from './dto/update-evaluation-cycle.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
@@ -20,5 +21,13 @@ export class EvaluationCyclesController {
   @Get()
   findAll() {
     return this.cyclesService.findAll();
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateEvaluationCycleDto,
+  ) {
+    return this.cyclesService.update(id, updateDto);
   }
 }
