@@ -64,6 +64,21 @@ export const api = {
       return response.json();
     },
 
+    getById: async (userId) => {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load user');
+      }
+
+      return response.json();
+    },
+
     create: async (payload) => {
       const response = await fetch(`${API_BASE_URL}/api/users`, {
         method: 'POST',
@@ -77,6 +92,124 @@ export const api = {
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Failed to create user');
+      }
+
+      return response.json();
+    },
+
+    update: async (userId, payload) => {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to update user');
+      }
+
+      return response.json();
+    },
+  },
+
+  colleges: {
+    listAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/college`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load colleges');
+      }
+
+      return response.json();
+    },
+  },
+  questions: {
+    listAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load questions');
+      }
+
+      return response.json();
+    },
+
+    findWithSections: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/questions/with-sections`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load questions with sections');
+      }
+
+      return response.json();
+    },
+
+    create: async (payload) => {
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to create question');
+      }
+
+      return response.json();
+    },
+
+    update: async (questionId, payload) => {
+      const response = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to update question');
+      }
+
+      return response.json();
+    },
+  },
+  questionSections: {
+    listAll: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/question-sections`, {
+        headers: {
+          ...getAuthHeaders(),
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to load question sections');
       }
 
       return response.json();

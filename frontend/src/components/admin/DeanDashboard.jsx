@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import FacultyTable from './FacultyTable';
 import EvaluatorSelection from './EvaluatorSelection';
 import ProgressDashboard from './ProgressDashboard';
+import QuestionsPage from './QuestionsPage';
 import { Menu } from 'lucide-react';
 import logo from '../../assets/website logo.svg';
 
@@ -16,6 +17,8 @@ const DeanDashboard = ({ onLogout }) => {
         return <FacultyTable onComplete={() => setCurrentView('select-evaluators')} />;
       case 'select-evaluators':
         return <EvaluatorSelection onConfirm={() => setCurrentView('progress')} />;
+      case 'questions':
+        return <QuestionsPage />;
       case 'progress':
         return <ProgressDashboard />;
       default:

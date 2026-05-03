@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
@@ -18,4 +18,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   image?: string; // Base64 encoded image string from frontend
+
+  @IsOptional()
+  @IsNumber()
+  college_id?: number;
 }

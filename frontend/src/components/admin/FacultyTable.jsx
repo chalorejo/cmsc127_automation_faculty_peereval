@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '../ui/button';
-import facultyIcon from '../../assets/faculty-icon.svg';
 import ConfirmationPopup from '../ui/ConfirmationPopup';
 import { useToast } from '../../lib/ToastContext';
 import { api } from '../../lib/api';
+import UsersTable from './users/UsersTable';
+import UserModal from './users/UserModal';
 
 const FacultyTable = ({ onComplete }) => {
   const roleOptions = useMemo(() => ([
@@ -16,22 +16,114 @@ const FacultyTable = ({ onComplete }) => {
 
   const [members, setMembers] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [collegeOptions, setCollegeOptions] = useState([]);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     role: 'Faculty',
     password: '',
+    image: '',
+    college_id: '',
   });
   const { showToast } = useToast();
 
   const normalizeRoleLabel = (role) => {
     const option = roleOptions.find((item) => item.value === role);
     return option ? option.label : role || 'Faculty';
+  };
+
+  const getInitialFormData = () => ({
+    full_name: '',
+    email: '',
+    role: 'Faculty',
+    password: '',
+    image: '',
+    college_id: '',
+  });
+
+  const resetForm = () => {
+    setFormData(getInitialFormData());
+    setImagePreview('');
+    setEditingUserId(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = async (member) => {
+    try {
+      const details = await api.users.getById(member.id);
+      setEditingUserId(member.id);
+      setFormData({
+        full_name: details.full_name || member.name,
+        email: details.email || member.email,
+        role: details.role || member.role || 'Faculty',
+        password: '',
+        image: '',
+        college_id: details.college_id ?? member.college_id ?? '',
+      });
+      setImagePreview(details.image_base64 ? `data:image/*;base64,${details.image_base64}` : '');
+      setIsEditModalOpen(true);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Unable to open editor',
+        message: error.message || 'Could not load this user.',
+        actionText: 'Dismiss',
+      });
+    }
+  };
+
+  const readImageAsBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error('Unable to read image file'));
+    reader.readAsDataURL(file);
+  });
+
+  const handleImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const maxSizeInBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      showToast({
+        type: 'warning',
+        title: 'Image too large',
+        message: 'Please choose an image smaller than 5 MB.',
+        actionText: 'Okay',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const base64 = await readImageAsBase64(file);
+      setFormData((prev) => ({ ...prev, image: base64 }));
+      setImagePreview(URL.createObjectURL(file));
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Image upload failed',
+        message: error.message || 'Please try another file.',
+        actionText: 'Dismiss',
+      });
+    }
   };
 
   const loadUsers = async () => {
@@ -46,6 +138,9 @@ const FacultyTable = ({ onComplete }) => {
             name: user.full_name,
             role: user.role,
             email: user.email,
+            collegeId: user.college_id ?? '',
+            collegeName: user.college_name || '',
+            avatarSrc: user.image_base64 ? `data:image/*;base64,${user.image_base64}` : '',
           }))
         : [];
 
@@ -64,8 +159,23 @@ const FacultyTable = ({ onComplete }) => {
     }
   };
 
+  const loadColleges = async () => {
+    try {
+      const data = await api.colleges.listAll();
+      setCollegeOptions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Unable to load colleges',
+        message: error.message || 'Please refresh and try again.',
+        actionText: 'Dismiss',
+      });
+    }
+  };
+
   useEffect(() => {
     loadUsers();
+    loadColleges();
   }, []);
 
   const toggleSelect = (id) => {
@@ -95,11 +205,23 @@ const FacultyTable = ({ onComplete }) => {
       return;
     }
 
-    if (formData.role !== 'Faculty' && !formData.password.trim()) {
+    if (formData.role === 'Faculty' && !formData.college_id) {
+      showToast({
+        type: 'warning',
+        title: 'College required',
+        message: 'Faculty members must belong to a college.',
+        actionText: 'Okay',
+      });
+      return;
+    }
+
+    const passwordRequiredOnCreate = formData.role !== 'Faculty' && !formData.password.trim();
+
+    if (passwordRequiredOnCreate) {
       showToast({
         type: 'warning',
         title: 'Password required',
-        message: 'Admin, Dean, and Department Chair accounts need a password.',
+        message: 'A password is required when changing a faculty account into a privileged account.',
         actionText: 'Okay',
       });
       return;
@@ -111,7 +233,9 @@ const FacultyTable = ({ onComplete }) => {
         full_name: formData.full_name.trim(),
         email: formData.email.trim(),
         role: formData.role,
+        ...(formData.college_id ? { college_id: Number(formData.college_id) } : {}),
         ...(formData.password.trim() ? { password: formData.password } : {}),
+        ...(formData.image ? { image: formData.image } : {}),
       });
 
       showToast({
@@ -126,6 +250,8 @@ const FacultyTable = ({ onComplete }) => {
         email: '',
         role: 'Faculty',
         password: '',
+        image: '',
+        college_id: '',
       });
       setIsAddModalOpen(false);
       await loadUsers();
@@ -138,6 +264,64 @@ const FacultyTable = ({ onComplete }) => {
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleUpdateUser = async (event) => {
+    event.preventDefault();
+
+    if (!editingUserId) return;
+
+    if (!formData.full_name.trim() || !formData.email.trim()) {
+      showToast({
+        type: 'warning',
+        title: 'Missing information',
+        message: 'Full name and email are required.',
+        actionText: 'Okay',
+      });
+      return;
+    }
+
+    if (formData.role === 'Faculty' && !formData.college_id) {
+      showToast({
+        type: 'warning',
+        title: 'College required',
+        message: 'Faculty members must belong to a college.',
+        actionText: 'Okay',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await api.users.update(editingUserId, {
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim(),
+        role: formData.role,
+        ...(formData.college_id ? { college_id: Number(formData.college_id) } : { college_id: null }),
+        ...(formData.password.trim() ? { password: formData.password } : {}),
+        ...(formData.image ? { image: formData.image } : {}),
+      });
+
+      showToast({
+        type: 'success',
+        title: 'User updated',
+        message: `${formData.full_name.trim()} was updated successfully.`,
+        actionText: 'Done',
+      });
+
+      resetForm();
+      setIsEditModalOpen(false);
+      await loadUsers();
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Update failed',
+        message: error.message || 'Could not update user.',
+        actionText: 'Dismiss',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -177,116 +361,18 @@ const FacultyTable = ({ onComplete }) => {
         <p className="text-brand-black text-base lg:text-lg">Manage faculty, admin, dean, and department chair accounts from this page.</p>
       </header>
 
-      <div className="flex flex-col">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-4">
-          <div className="text-sm text-brand-grey">
-            {isLoading ? 'Loading users...' : `${members.length} user${members.length === 1 ? '' : 's'} loaded`}
-          </div>
-          <div className="flex items-center gap-4 lg:gap-6">
-            <button onClick={selectAll} className="text-xs lg:text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Select All Faculty</button>
-            <button onClick={deselectAll} className="text-xs lg:text-sm font-medium text-brand-grey hover:text-brand-black transition-colors">Deselect All</button>
-            <Button
-              type="button"
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-brand-maroon hover:opacity-90 text-white px-5 py-2.5 h-auto rounded-[14px] text-sm font-medium transition-all shadow-[0_8px_20px_-4px_rgba(123,17,19,0.22)]"
-            >
-              <Plus className="w-4 h-4" />
-              Add User
-            </Button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-6 py-5 text-sm font-semibold text-brand-black">Member</th>
-                <th className="hidden lg:table-cell px-6 py-5 text-sm font-semibold text-brand-black">Role</th>
-                <th className="hidden lg:table-cell px-6 py-5 text-sm font-semibold text-brand-black">Email</th>
-                <th className="px-6 py-5 text-sm font-semibold text-brand-black text-right">Action</th>
-              </tr>
-            </thead>
-            {isLoading ? (
-              <tbody>
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-brand-grey">
-                    <div className="inline-flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading users...
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            ) : loadError ? (
-              <tbody>
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-brand-maroon">
-                    {loadError}
-                  </td>
-                </tr>
-              </tbody>
-            ) : members.length === 0 ? (
-              <tbody>
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-brand-grey">
-                    No users have been added yet. Use Add User to create the first account.
-                  </td>
-                </tr>
-              </tbody>
-            ) : (
-              <tbody className="divide-y divide-gray-50">
-                {members.map((member) => {
-                  const canSelect = member.role === 'Faculty';
-                  const isSelected = selectedIds.includes(member.id);
-
-                  return (
-                    <tr key={member.id} className="hover:bg-gray-50/30 transition-colors group">
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
-                             <img src={facultyIcon} alt={member.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-brand-black truncate text-sm lg:text-base">{member.name}</p>
-                            <p className="lg:hidden text-xs text-brand-grey font-medium truncate">{normalizeRoleLabel(member.role)}</p>
-                            <p className="text-xs text-brand-grey italic truncate">{member.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="hidden lg:table-cell px-6 py-6">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-brand-black">
-                          {normalizeRoleLabel(member.role)}
-                        </span>
-                      </td>
-                      <td className="hidden lg:table-cell px-6 py-6">
-                        <span className="text-sm text-brand-black font-medium">{member.email}</span>
-                      </td>
-                      <td className="px-6 py-6 text-right">
-                        {canSelect ? (
-                          <button 
-                            onClick={() => toggleSelect(member.id)}
-                            className={`w-6 h-6 rounded-md border flex items-center justify-center transition-all duration-200 ml-auto ${
-                              isSelected
-                                ? 'bg-brand-green border-brand-green'
-                                : 'border-gray-300 bg-white hover:border-gray-400'
-                            }`}
-                          >
-                            {isSelected && <Check className="w-4 h-4 text-white stroke-[3]" />}
-                          </button>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-brand-grey">
-                            View only
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            )}
-          </table>
-        </div>
-      </div>
+      <UsersTable
+        members={members}
+        selectedIds={selectedIds}
+        isLoading={isLoading}
+        loadError={loadError}
+        onSelectAll={selectAll}
+        onDeselectAll={deselectAll}
+        onAddUser={openCreateModal}
+        onToggleSelect={toggleSelect}
+        onEditUser={openEditModal}
+        normalizeRoleLabel={normalizeRoleLabel}
+      />
 
       <div className="mt-8 lg:mt-12 flex justify-end">
         <Button 
@@ -307,104 +393,24 @@ const FacultyTable = ({ onComplete }) => {
         cancelLabel="Cancel"
       />
 
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-              <div>
-                <h2 className="text-xl font-semibold text-brand-black">Add User</h2>
-                <p className="text-sm text-brand-grey">Create a faculty, admin, dean, or department chair account.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="rounded-full p-2 text-brand-grey hover:bg-gray-100 hover:text-brand-black"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="space-y-4 px-6 py-6">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-brand-black" htmlFor="full_name">
-                  Full Name
-                </label>
-                <input
-                  id="full_name"
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, full_name: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand-green"
-                  placeholder="Juan Dela Cruz"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-brand-black" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand-green"
-                  placeholder="juan@school.edu"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-brand-black" htmlFor="role">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  value={formData.role}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, role: event.target.value, password: event.target.value === 'Faculty' ? '' : prev.password }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand-green"
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role.value} value={role.value}>
-                      {role.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-brand-black" htmlFor="password">
-                  Password {formData.role !== 'Faculty' ? '(required)' : '(optional)'}
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, password: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-brand-green"
-                  placeholder={formData.role === 'Faculty' ? 'Leave blank for faculty' : 'Set a password'}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-brand-black hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <Button
-                  type="submit"
-                  disabled={isCreating}
-                  className="rounded-xl bg-brand-maroon px-5 py-3 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isCreating ? 'Saving...' : 'Create User'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UserModal
+        isOpen={isAddModalOpen || isEditModalOpen}
+        isEdit={isEditModalOpen}
+        formData={formData}
+        setFormData={setFormData}
+        roleOptions={roleOptions}
+        collegeOptions={collegeOptions}
+        imagePreview={imagePreview}
+        onImageChange={handleImageChange}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setIsEditModalOpen(false);
+          resetForm();
+        }}
+        onSubmit={isEditModalOpen ? handleUpdateUser : handleCreateUser}
+        isCreating={isCreating}
+        isSaving={isSaving}
+      />
     </div>
   );
 };
