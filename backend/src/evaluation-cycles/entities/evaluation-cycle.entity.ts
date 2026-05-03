@@ -16,4 +16,7 @@ export class EvaluationCycle {
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
+
+  @Column({ type: 'int', default: 5 })
+  max_evaluations_per_faculty: number;
 }

@@ -30,8 +30,17 @@ export class EvaluationSummary {
   @Column({ type: 'decimal', precision: 3, scale: 2 })
   average_score: number;
 
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  total_average: number;
+
   @Column({ type: 'boolean' })
   is_satisfactory: boolean;
+
+  @Column({ type: 'jsonb', nullable: true })
+  section_statistics: unknown;
+
+  @Column({ type: 'jsonb', nullable: true })
+  open_ended_comments: unknown;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'chair_sign_id' })

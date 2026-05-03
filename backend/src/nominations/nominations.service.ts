@@ -11,6 +11,7 @@ import { Evaluation, EvaluationStatus } from '../evaluations/entities/evaluation
 @Injectable()
 export class NominationsService {
   private readonly logger = new Logger(NominationsService.name);
+  private readonly minimumApprovedEvaluators = 3;
 
   constructor(
     @InjectRepository(Nomination) private nomRepo: Repository<Nomination>,
@@ -120,6 +121,7 @@ export class NominationsService {
         nomination_id: In(nominationIds),
         status: NominationStatus.PENDING,
       },
+      relations: ['cycle'],
     });
 
     if (nominations.length !== nominationIds.length) {
@@ -133,6 +135,58 @@ export class NominationsService {
     const approvedNominationIds = decisions
       .filter((d) => d.status === NominationStatus.APPROVED)
       .map((d) => d.nomination_id);
+
+    if (approvedNominationIds.length < this.minimumApprovedEvaluators) {
+      throw new BadRequestException(
+        `At least ${this.minimumApprovedEvaluators} evaluators must be approved before proceeding.`,
+      );
+    }
+
+    const approvedNominations = nominations.filter((nomination) =>
+      approvedNominationIds.includes(nomination.nomination_id),
+    );
+
+    const cycleIds = [...new Set(approvedNominations.map((nomination) => nomination.cycle_id))];
+    const cycles = await this.dataSource.getRepository(EvaluationCycle).find({
+      where: { cycle_id: In(cycleIds) },
+    });
+    const cycleById = new Map(cycles.map((cycle) => [cycle.cycle_id, cycle]));
+
+    const workloadCounts = new Map<string, number>();
+    const evaluationRows = await this.dataSource
+      .getRepository(Evaluation)
+      .createQueryBuilder('evaluation')
+      .innerJoin('evaluation.nomination', 'nomination')
+      .select('nomination.cycle_id', 'cycle_id')
+      .addSelect('nomination.evaluator_id', 'evaluator_id')
+      .addSelect('COUNT(evaluation.evaluation_id)', 'evaluation_count')
+      .where('nomination.cycle_id IN (:...cycleIds)', { cycleIds })
+      .groupBy('nomination.cycle_id')
+      .addGroupBy('nomination.evaluator_id')
+      .getRawMany<{ cycle_id: string; evaluator_id: string; evaluation_count: string }>();
+
+    for (const row of evaluationRows) {
+      workloadCounts.set(`${row.cycle_id}:${row.evaluator_id}`, Number(row.evaluation_count));
+    }
+
+    for (const nomination of approvedNominations) {
+      const cycle = cycleById.get(nomination.cycle_id);
+
+      if (!cycle) {
+        throw new BadRequestException(`Evaluation cycle #${nomination.cycle_id} not found.`);
+      }
+
+      const workloadKey = `${nomination.cycle_id}:${nomination.evaluator_id}`;
+      const currentCount = workloadCounts.get(workloadKey) ?? 0;
+
+      if (currentCount >= cycle.max_evaluations_per_faculty) {
+        throw new BadRequestException(
+          `Evaluator #${nomination.evaluator_id} has already reached the maximum of ${cycle.max_evaluations_per_faculty} evaluation assignments for cycle ${cycle.year}.`,
+        );
+      }
+
+      workloadCounts.set(workloadKey, currentCount + 1);
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();

@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { QuestionSection } from './question-section.entity';
 
 export enum QuestionType {
   LIKERT = 'LIKERT',
@@ -24,4 +25,14 @@ export class Question {
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
+
+  @ManyToOne(() => QuestionSection, (section) => section.questions, { nullable: true })
+  @JoinColumn({ name: 'section_id' })
+  section: QuestionSection;
+
+  @Column({ type: 'int', nullable: true })
+  section_id: number;
+
+  @Column({ type: 'int', default: 0 })
+  order_in_section: number;
 }

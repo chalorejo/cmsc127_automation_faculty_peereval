@@ -1,4 +1,4 @@
-import { IsInt, IsDateString, IsBoolean, IsOptional } from 'class-validator';
+import { IsInt, IsDateString, IsBoolean, IsOptional, Min } from 'class-validator';
 
 export class CreateEvaluationCycleDto {
   @IsInt()
@@ -13,4 +13,9 @@ export class CreateEvaluationCycleDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  max_evaluations_per_faculty?: number;
 }
