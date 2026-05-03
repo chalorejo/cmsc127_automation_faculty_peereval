@@ -10,6 +10,8 @@ import { QuestionsModule } from './questions/questions.module';
 import { AnswersModule } from './answers/answers.module';
 import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-summaries.module';
 import { AuthModule } from './auth/auth.module';
+import { CollegeModule } from './college/college.module';
+import { PdfServicesModule } from './pdf-services/pdf-services.module';
 import { EmailModule } from './email/email.module';
 
 @Module({
@@ -55,6 +57,10 @@ import { EmailModule } from './email/email.module';
     EvaluationSummariesModule,
     
     AuthModule,
+    
+    CollegeModule,
+    
+    PdfServicesModule,
 
     EmailModule,
   ],

@@ -34,4 +34,16 @@ export class EvaluationSummariesController {
     // Security: They can ONLY fetch records where evaluatee_id matches their token
     return this.summariesService.findMySummaries(req.user.user_id);
   }
+
+  @Roles(UserRole.FACULTY, UserRole.DEP_CHAIR, UserRole.DEAN, UserRole.ADMIN)
+  @Get(':id/pdf-data')
+  getPdfData(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.summariesService.getPdfData(id, req.user.user_id, req.user.role);
+  }
+
+  @Roles(UserRole.FACULTY, UserRole.DEP_CHAIR, UserRole.DEAN, UserRole.ADMIN)
+  @Get(':id/pdf-structure')
+  getPdfStructure(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.summariesService.getPdfStructure(id, req.user.user_id, req.user.role);
+  }
 }

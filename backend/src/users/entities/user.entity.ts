@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { College } from '../../college/entities/college.entity';
 
 export enum UserRole {
   FACULTY = 'Faculty',
@@ -27,4 +28,16 @@ export class User {
     default: UserRole.FACULTY,
   })
   role: UserRole;
+
+  @Column({ type: 'bytea', nullable: true })
+  image: Buffer | null;
+
+  @ManyToOne(() => College, (college) => college.users, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'college_id' })
+  college: College | null;
+  @Column({ type: 'int', nullable: true })
+  college_id: number | null;
 }
