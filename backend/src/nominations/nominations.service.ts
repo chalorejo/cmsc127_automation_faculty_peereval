@@ -1,12 +1,16 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Nomination, NominationStatus } from './entities/nomination.entity';
 import { SubmitNominationsDto } from './dto/submit-nominations.dto';
 import { EvaluationCycle } from '../evaluation-cycles/entities/evaluation-cycle.entity';
+import { EvaluationCycleFaculty } from '../evaluation-cycles/entities/evaluation-cycle-faculty.entity';
 import { MagicLink, MagicLinkPurpose } from '../magic-links/entities/magic-link.entity';
 import { ReviewNominationItemDto } from './dto/review-nominations.dto';
 import { Evaluation, EvaluationStatus } from '../evaluations/entities/evaluation.entity';
+import { EmailService } from '../email/email.service';
+import { MagicLinksService } from '../magic-links/magic-links.service';
 
 @Injectable()
 export class NominationsService {
@@ -16,6 +20,9 @@ export class NominationsService {
   constructor(
     @InjectRepository(Nomination) private nomRepo: Repository<Nomination>,
     private dataSource: DataSource, // Used for Transactions
+    private emailService: EmailService,
+    private magicLinksService: MagicLinksService,
+    private configService: ConfigService,
   ) {}
 
   async findPendingApprovalGrouped() {
@@ -52,9 +59,35 @@ export class NominationsService {
       throw new BadRequestException("You cannot nominate yourself.");
     }
 
+    const uniqueEvaluatorIds = new Set(dto.evaluator_ids);
+    if (uniqueEvaluatorIds.size !== dto.evaluator_ids.length) {
+      throw new BadRequestException('Duplicate evaluator IDs are not allowed.');
+    }
+
     // 1. Find the active cycle
     const cycle = await this.dataSource.getRepository(EvaluationCycle).findOne({ where: { is_active: true } });
     if (!cycle) throw new BadRequestException("No active evaluation cycle found.");
+
+    const assignmentRepo = this.dataSource.getRepository(EvaluationCycleFaculty);
+    const evaluateeAssignment = await assignmentRepo.findOne({
+      where: { cycle_id: cycle.cycle_id, user_id: evaluateeId },
+    });
+
+    if (!evaluateeAssignment) {
+      throw new BadRequestException('You are not assigned to the active evaluation cycle.');
+    }
+
+    const evaluatorAssignments = await assignmentRepo.find({
+      where: { cycle_id: cycle.cycle_id, user_id: In([...uniqueEvaluatorIds]) },
+    });
+
+    if (evaluatorAssignments.length !== uniqueEvaluatorIds.size) {
+      const assignedIds = new Set(evaluatorAssignments.map((assignment) => assignment.user_id));
+      const missingIds = [...uniqueEvaluatorIds].filter((id) => !assignedIds.has(id));
+      throw new BadRequestException(
+        `The following evaluators are not assigned to the active cycle: ${missingIds.join(', ')}`,
+      );
+    }
 
     // 2. Use a Transaction to ensure all 5 save, or none save
     const queryRunner = this.dataSource.createQueryRunner();
@@ -62,13 +95,21 @@ export class NominationsService {
     await queryRunner.startTransaction();
 
     try {
+      const existingNominations = await queryRunner.manager.count(Nomination, {
+        where: { evaluatee_id: evaluateeId, cycle_id: cycle.cycle_id },
+      });
+
+      if (existingNominations > 0) {
+        throw new BadRequestException('Nominations have already been submitted for this cycle.');
+      }
+
       // Create the Nomination entities
       const nominations = dto.evaluator_ids.map(evaluator_id => {
         return this.nomRepo.create({
           evaluatee_id: evaluateeId,
           evaluator_id: evaluator_id,
           cycle_id: cycle.cycle_id,
-          status: 'PENDING' as any, // Using the enum value
+          status: NominationStatus.PENDING,
         });
       });
 
@@ -132,15 +173,48 @@ export class NominationsService {
       decisions.map((d) => [d.nomination_id, d.status]),
     );
 
+    const nominationsByEvaluatee = new Map<string, { evaluatee_id: number; cycle_id: number; nomination_ids: number[] }>();
+    for (const nomination of nominations) {
+      const key = `${nomination.evaluatee_id}:${nomination.cycle_id}`;
+      if (!nominationsByEvaluatee.has(key)) {
+        nominationsByEvaluatee.set(key, {
+          evaluatee_id: nomination.evaluatee_id,
+          cycle_id: nomination.cycle_id,
+          nomination_ids: [],
+        });
+      }
+      nominationsByEvaluatee.get(key)!.nomination_ids.push(nomination.nomination_id);
+    }
+
+    for (const group of nominationsByEvaluatee.values()) {
+      const approvedCount = group.nomination_ids.filter(
+        (id) => statusByNominationId.get(id) === NominationStatus.APPROVED,
+      ).length;
+
+      if (approvedCount !== this.minimumApprovedEvaluators) {
+        throw new BadRequestException(
+          `Exactly ${this.minimumApprovedEvaluators} evaluators must be approved for evaluatee #${group.evaluatee_id} in cycle #${group.cycle_id}.`,
+        );
+      }
+
+      const totalPending = await this.nomRepo.count({
+        where: {
+          evaluatee_id: group.evaluatee_id,
+          cycle_id: group.cycle_id,
+          status: NominationStatus.PENDING,
+        },
+      });
+
+      if (totalPending !== group.nomination_ids.length) {
+        throw new BadRequestException(
+          `All pending nominations for evaluatee #${group.evaluatee_id} in cycle #${group.cycle_id} must be reviewed together.`,
+        );
+      }
+    }
+
     const approvedNominationIds = decisions
       .filter((d) => d.status === NominationStatus.APPROVED)
       .map((d) => d.nomination_id);
-
-    if (approvedNominationIds.length < this.minimumApprovedEvaluators) {
-      throw new BadRequestException(
-        `At least ${this.minimumApprovedEvaluators} evaluators must be approved before proceeding.`,
-      );
-    }
 
     const approvedNominations = nominations.filter((nomination) =>
       approvedNominationIds.includes(nomination.nomination_id),
@@ -231,11 +305,15 @@ export class NominationsService {
         `Nomination review completed by user #${reviewerId}. Approved: ${approvedNominationIds.length}, Total reviewed: ${decisions.length}.`,
       );
 
-      // Placeholder for notification integration once mailer service is connected.
+      // Send evaluation emails to approved evaluators
+      const emailResult = await this.sendEvaluationEmails(approvedNominationIds);
+
       return {
         message: 'Nominations reviewed successfully.',
         reviewed_count: decisions.length,
         approved_count: approvedNominationIds.length,
+        evaluation_emails_sent: emailResult.success,
+        evaluation_emails_failed: emailResult.failed,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -243,5 +321,86 @@ export class NominationsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  private async sendEvaluationEmails(nominationIds: number[]) {
+    const sentCount = { success: 0, failed: 0 };
+    const failedEvaluators: Array<{ evaluator_id: number; email: string; error: string }> = [];
+
+    if (nominationIds.length === 0) {
+      return sentCount;
+    }
+
+    try {
+      // Get evaluations with evaluator and evaluatee details
+      const evaluations = await this.dataSource.getRepository(Evaluation).find({
+        where: { nomination_id: In(nominationIds) },
+        relations: [
+          'nomination',
+          'nomination.evaluator',
+          'nomination.evaluatee',
+          'nomination.cycle',
+        ],
+      });
+
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      if (!frontendUrl) {
+        throw new Error('FRONTEND_URL must be set to send evaluation emails.');
+      }
+
+      // Send email to each evaluator
+      for (const evaluation of evaluations) {
+        try {
+          const evaluator = evaluation.nomination.evaluator;
+          const evaluatee = evaluation.nomination.evaluatee;
+          const cycle = evaluation.nomination.cycle;
+
+          // Create magic link for evaluation
+          const magicLink = await this.magicLinksService.createLink({
+            user_id: evaluator.user_id,
+            purpose: MagicLinkPurpose.EVALUATION,
+            reference_id: evaluation.evaluation_id,
+          });
+
+          // Build magic link URL
+          const magicLinkUrl = `${frontendUrl}/evaluate?token=${magicLink.token_hash}`;
+
+          // Send email
+          await this.emailService.sendEvaluationMagicLinkEmail(
+            evaluator.email,
+            evaluator.full_name,
+            evaluatee.full_name,
+            magicLinkUrl,
+            `Year ${cycle.year}`,
+          );
+
+          sentCount.success++;
+          this.logger.log(
+            `Evaluation email sent to evaluator #${evaluator.user_id} (${evaluator.email}) for evaluation of #${evaluatee.user_id}.`,
+          );
+        } catch (error) {
+          sentCount.failed++;
+          failedEvaluators.push({
+            evaluator_id: evaluation.nomination.evaluator_id,
+            email: evaluation.nomination.evaluator.email,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          this.logger.error(
+            `Failed to send evaluation email to evaluator #${evaluation.nomination.evaluator_id} (${evaluation.nomination.evaluator.email}): ${error}`,
+          );
+        }
+      }
+
+      if (sentCount.failed > 0) {
+        this.logger.warn(
+          `Evaluation email sending completed with ${sentCount.success} successes and ${sentCount.failed} failures.`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(`Error in sendEvaluationEmails: ${error}`);
+      // Log but don't throw - email failure shouldn't fail the review process
+    }
+
+    return sentCount;
   }
 }

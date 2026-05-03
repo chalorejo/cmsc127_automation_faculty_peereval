@@ -14,7 +14,6 @@ export class AnswersController {
   @Roles(UserRole.FACULTY)
   @Post('submit-evaluation')
   submitEvaluation(@Request() req, @Body() dto: SubmitEvaluationDto) {
-    // req.user.user_id guarantees the logged-in user is the designated evaluator
     return this.answersService.submitAnswers(req.user.user_id, dto, req.user.token_id);
   }
 }
