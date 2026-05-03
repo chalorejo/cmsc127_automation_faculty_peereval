@@ -10,6 +10,7 @@ import { QuestionsModule } from './questions/questions.module';
 import { AnswersModule } from './answers/answers.module';
 import { EvaluationSummariesModule } from './evaluation-summaries/evaluation-summaries.module';
 import { AuthModule } from './auth/auth.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports:[
@@ -25,12 +26,15 @@ import { AuthModule } from './auth/auth.module';
         url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
         synchronize: true,
-        ssl: true,
-        extra: {
-          ssl: {
-            rejectUnauthorized: false, 
-          },
-        },
+        ssl: configService.get<string>('DATABASE_SSL', 'true') === 'true',
+        extra:
+          configService.get<string>('DATABASE_SSL', 'true') === 'true'
+            ? {
+                ssl: {
+                  rejectUnauthorized: false,
+                },
+              }
+            : undefined,
       }),
     }),
     
@@ -51,6 +55,8 @@ import { AuthModule } from './auth/auth.module';
     EvaluationSummariesModule,
     
     AuthModule,
+
+    EmailModule,
   ],
 })
 export class AppModule {}
